@@ -9,7 +9,7 @@ CREATE TABLE Ciudad (
 ) ENGINE = InnoDB;
 
 CREATE TABLE Sucursal (
-    nro_suc SMALLINT UNSIGNED NOT NULL,
+    nro_suc SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
     nombre VARCHAR(45) NOT NULL,
     direccion VARCHAR(45) NOT NULL,
     telefono VARCHAR(45) NOT NULL,
@@ -20,10 +20,10 @@ CREATE TABLE Sucursal (
 ) ENGINE = InnoDB;
 
 CREATE TABLE Empleado (
-    legajo SMALLINT UNSIGNED NOT NULL,
+    legajo SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
     apellido VARCHAR(45) NOT NULL,
     nombre VARCHAR(45) NOT NULL,
-    tipo_doc VARCHAR(45) NOT NULL,
+    tipo_doc VARCHAR(20) NOT NULL,
     nro_doc INT UNSIGNED NOT NULL,
     direccion VARCHAR(45) NOT NULL,
     telefono VARCHAR(45) NOT NULL,
@@ -35,10 +35,10 @@ CREATE TABLE Empleado (
 ) ENGINE = InnoDB;
 
 CREATE TABLE Cliente (
-    nro_cliente INT UNSIGNED NOT NULL,
+    nro_cliente INT UNSIGNED NOT NULL AUTO_INCREMENT,
     apellido  VARCHAR(45) NOT NULL,
     nombre VARCHAR(45) NOT NULL,
-    tipo_doc VARCHAR(45) NOT NULL,
+    tipo_doc VARCHAR(20) NOT NULL,
     nro_doc INT UNSIGNED NOT NULL,
     direccion VARCHAR(45) NOT NULL,
     telefono VARCHAR(45) NOT NULL,
@@ -47,12 +47,12 @@ CREATE TABLE Cliente (
 ) ENGINE = InnoDB;
 
 CREATE TABLE Plazo_Fijo (
-    nro_plazo INT UNSIGNED NOT NULL,
-    capital DECIMAL(10,2) UNSIGNED NOT NULL,
+    nro_plazo INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    capital DECIMAL(16,2) UNSIGNED NOT NULL,
     fecha_inicio DATE NOT NULL,
     fecha_fin DATE NOT NULL,
-    tasa_interes DECIMAL(10,2) UNSIGNED NOT NULL,
-    interes DECIMAL(10,2) UNSIGNED NOT NULL,
+    tasa_interes DECIMAL(4,2) UNSIGNED NOT NULL,
+    interes DECIMAL(16,2) UNSIGNED NOT NULL,
     nro_suc SMALLINT UNSIGNED NOT NULL,
     PRIMARY KEY (nro_plazo),
     FOREIGN KEY (nro_suc) REFERENCES Sucursal (nro_suc)
@@ -60,9 +60,9 @@ CREATE TABLE Plazo_Fijo (
 
 CREATE TABLE Tasa_Plazo_Fijo (
     periodo SMALLINT UNSIGNED NOT NULL,
-    monto_inf DECIMAL(10,2) UNSIGNED NOT NULL,
-    monto_sup DECIMAL(10,2) UNSIGNED NOT NULL,
-    tasa DECIMAL(6,2) UNSIGNED NOT NULL,
+    monto_inf DECIMAL(16,2) UNSIGNED NOT NULL,
+    monto_sup DECIMAL(16,2) UNSIGNED NOT NULL,
+    tasa DECIMAL(4,2) UNSIGNED NOT NULL,
     PRIMARY KEY (periodo, monto_inf, monto_sup)
 ) ENGINE = InnoDB;
 
@@ -75,13 +75,13 @@ CREATE TABLE Plazo_Cliente (
 ) ENGINE = InnoDB;
 
 CREATE TABLE Prestamo (
-    nro_prestamo INT UNSIGNED NOT NULL,
+    nro_prestamo INT UNSIGNED NOT NULL AUTO_INCREMENT,
     fecha DATE NOT NULL,
     cant_meses SMALLINT UNSIGNED NOT NULL,
     monto DECIMAL(10,2) UNSIGNED NOT NULL,
-    tasa_interes DECIMAL(10,2) UNSIGNED NOT NULL,
-    interes DECIMAL(10,2) UNSIGNED NOT NULL,
-    valor_cuota DECIMAL(10,2) UNSIGNED NOT NULL,
+    tasa_interes DECIMAL(4,2) UNSIGNED NOT NULL,
+    interes DECIMAL(9,2) UNSIGNED NOT NULL,
+    valor_cuota DECIMAL(9,2) UNSIGNED NOT NULL,
     legajo SMALLINT UNSIGNED NOT NULL,
     nro_cliente INT UNSIGNED NOT NULL,
     PRIMARY KEY (nro_prestamo),
@@ -93,7 +93,7 @@ CREATE TABLE Pago (
     nro_prestamo INT UNSIGNED NOT NULL,
     nro_pago SMALLINT UNSIGNED NOT NULL,
     fecha_venc DATE NOT NULL,
-    fecha_pago DATE NOT NULL,
+    fecha_pago DATE,
     PRIMARY KEY (nro_prestamo, nro_pago),
     FOREIGN KEY (nro_prestamo) REFERENCES Prestamo (nro_prestamo)
 ) ENGINE = InnoDB;
@@ -102,14 +102,14 @@ CREATE TABLE Tasa_Prestamo (
     periodo SMALLINT UNSIGNED NOT NULL,
     monto_inf DECIMAL(10,2) UNSIGNED NOT NULL,
     monto_sup DECIMAL(10,2) UNSIGNED NOT NULL,
-    tasa DECIMAL(6,2) UNSIGNED NOT NULL,
+    tasa DECIMAL(4,2) UNSIGNED NOT NULL,
     PRIMARY KEY (periodo, monto_inf, monto_sup)
 ) ENGINE = InnoDB;
 
 CREATE TABLE Caja_Ahorro (
-    nro_ca INT UNSIGNED NOT NULL,
+    nro_ca INT UNSIGNED NOT NULL AUTO_INCREMENT,
     CBU BIGINT UNSIGNED NOT NULL,
-    saldo DECIMAL(16,2) NOT NULL,
+    saldo DECIMAL(16,2) UNSIGNED NOT NULL,
     PRIMARY KEY (nro_ca)
 ) ENGINE = InnoDB;
 
@@ -122,7 +122,7 @@ CREATE TABlE Cliente_CA (
 ) Engine = InnoDB;
 
 CREATE TABLE Tarjeta (
-    nro_tarjeta BIGINT UNSIGNED NOT NULL,
+    nro_tarjeta BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     PIN CHAR(64) NOT NULL,
     CVT CHAR(64) NOT NULL,
     fecha_venc DATE NOT NULL,
@@ -133,7 +133,7 @@ CREATE TABLE Tarjeta (
 ) Engine = InnoDB;
 
 CREATE TABLE Caja (
-    cod_caja INT UNSIGNED NOT NULL,
+    cod_caja INT UNSIGNED NOT NULL AUTO_INCREMENT,
     PRIMARY KEY (cod_caja)
 ) ENGINE = InnoDB;
 
@@ -155,16 +155,16 @@ CREATE TABLE ATM (
 ) Engine = InnoDB;
 
 CREATE TABLE Transaccion (
-    nro_trans BIGINT UNSIGNED NOT NULL,
+    nro_trans BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     fecha DATE NOT NULL,
-    hora VARCHAR(45) NOT NULL,
-    monto DECIMAL(10,2) UNSIGNED NOT NULL,
+    hora TIME NOT NULL,
+    monto DECIMAL(16,2) UNSIGNED NOT NULL,
     PRIMARY KEY (nro_trans)
 ) Engine = InnoDB;
 
 CREATE TABLE Debito (
     nro_trans BIGINT UNSIGNED NOT NULL,
-    descripcion VARCHAR(45) NOT NULL,
+    descripcion TEXT,
     nro_cliente INT UNSIGNED NOT NULL,
     nro_ca INT UNSIGNED NOT NULL,
     PRIMARY KEY (nro_trans),
