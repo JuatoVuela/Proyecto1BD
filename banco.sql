@@ -359,7 +359,7 @@ BEGIN
 END //
 DELIMITER ;
 
---Ejercicio1-a)
+-- Ejercicio1-a)
 
 DROP PROCEDURE IF EXISTS transferir;
 
@@ -580,7 +580,7 @@ BEGIN
     WHERE pa.fecha_pago IS NULL AND pa.fecha_venc < CURDATE()
     GROUP BY
         c.nro_cliente,
-        c.tipo_doc,
+        cprestamo.tipo_doc,
         c.nro_doc,
         c.nombre,
         c.apellido,
@@ -601,7 +601,7 @@ DROP USER IF EXISTS ''@'localhost';
 DROP USER IF EXISTS 'empleado'@'%';
 CREATE USER 'empleado'@'%' IDENTIFIED BY 'empleado';
 GRANT SELECT ON banco.Empleado TO 'empleado'@'%';
-GRANT SELECT ON banco.Sucursal TO 'empleado'@'%';
+GRANT SELprestamoECT ON banco.Sucursal TO 'empleado'@'%';
 GRANT SELECT ON banco.Tasa_Plazo_Fijo TO 'empleado'@'%';
 GRANT SELECT ON banco.Tasa_Prestamo TO 'empleado'@'%';
 
