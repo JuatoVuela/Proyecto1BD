@@ -327,3 +327,60 @@ GRANT SELECT ON banco.trans_cajas_ahorro TO 'atm'@'%';
 GRANT SELECT, UPDATE ON banco.Tarjeta TO 'atm'@'%';
 
 FLUSH PRIVILEGES;
+
+DROP PROCEDURE IF EXISTS extraer;
+
+DELIMITER //
+CREATE PROCEDURE extraer(IN nro_atm INT, IN tarjeta BIGINT, IN destino INT, IN monto DECIMAL (16, 2), OUT resultado VARCHAR(100))
+BEGIN
+    DECLARE v_nro_cliente INT;
+    DECLARE v_nro_ca INT;
+    DECLARE v_saldo DECIMAL(16, 2)
+    DECLARE v_nro_trans BIGINT UNSIGNED;
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        ROLLBACK;
+        SET resultado = 'Error: la transaccion fue cancelada';
+    END;
+
+    START TRANSACTION;
+
+    SELECT t.nro_cliente, t.nro_ca INTO v_nro_cliente, v_nro_ca FROM Tarjeta t WHERE t.nro_tarjeta = tarjeta;
+
+    IF NOT EXISTS (SELECT * FROM ATM a WHERE cod_caja = a.nro_atm) THEN
+        SET resultado = 'Error: odigo de ATM invalido';
+        ROLLBACK; 
+
+    ELSEIF v_nro_ca IS NULL THEN
+        SET resultado = 'Error: la tarejta no existe';
+        ROLLBACK;
+
+    ELSEIF monto <= 0 THEN
+        SET resultado = 'Error: el monto debe ser positivo';
+        ROLLBACK;
+    
+    ELSE
+        SELECT ca.saldo INTO v_saldo FROM Caja_Ahorro ca WHERE ca.nro_ca = v_nro_ca;
+
+    FOR UPDATE;
+        IF monto > v_saldo THEN
+            SET resultado = 'Error" el monto excede el saldo de la cuenta';
+            ROLLBACK;
+        ELSE
+            UPDATE Caja_Ahorro ca SET ca.aldo = ca.saldo - monto
+            WHERE ca.nro_ca = v_nro_ca;
+
+            INSERT INTO Transaccion (fecha, hora, monto) VALUES (CURDATE(), CURTIME(), monto);
+            SET v_nro_trans = LAST_INSERT_ID;
+            
+            INSERT INTO Transaccion_por_caja (nro_trans, cod_caja) VALUES (v_nro_trans, nro_atm);
+            
+            INSERT INTO Extraccion (nro_cliente, nro_ca) VALUES (v_nro_cliente, v_nro_ca)
+
+            COMMIT;
+            SET resultado = 'Extraccion exitosa';
+        END IF;
+    END IF;
+END //
+DELIMITER;
