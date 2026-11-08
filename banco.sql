@@ -298,44 +298,7 @@ CREATE VIEW trans_cajas_ahorro AS
     JOIN Caja_Ahorro ca ON tr.origen = ca.nro_ca
     JOIN Cliente c ON tr.nro_cliente = c.nro_cliente;
     
-DROP USER IF EXISTS 'admin'@'localhost';
-CREATE USER 'admin'@'localhost' IDENTIFIED BY 'admin';
-GRANT ALL PRIVILEGES ON banco.* TO 'admin'@'localhost' WITH GRANT OPTION;
-GRANT CREATE USER ON *.* TO 'admin'@'localhost';
 
-DROP USER IF EXISTS ''@'localhost';
-DROP USER IF EXISTS 'empleado'@'%';
-CREATE USER 'empleado'@'%' IDENTIFIED BY 'empleado';
-GRANT SELECT ON banco.Empleado TO 'empleado'@'%';
-GRANT SELECT ON banco.Sucursal TO 'empleado'@'%';
-GRANT SELECT ON banco.Tasa_Plazo_Fijo TO 'empleado'@'%';
-GRANT SELECT ON banco.Tasa_Prestamo TO 'empleado'@'%';
-
-GRANT SELECT, INSERT ON banco.Prestamo TO 'empleado'@'%';
-GRANT SELECT, INSERT ON banco.Plazo_Fijo TO 'empleado'@'%';
-GRANT SELECT, INSERT ON banco.Plazo_Cliente TO 'empleado'@'%';
-GRANT SELECT, INSERT ON banco.Caja_Ahorro TO 'empleado'@'%';
-GRANT SELECT, INSERT ON banco.Tarjeta TO 'empleado'@'%';
-
-GRANT SELECT, INSERT, UPDATE ON banco.Cliente TO 'empleado'@'%';
-GRANT SELECT, INSERT, UPDATE ON banco.Cliente_CA TO 'empleado'@'%';
-GRANT SELECT, INSERT, UPDATE ON banco.Pago TO 'empleado'@'%';
-
-GRANT EXECUTE ON PROCEDURE banco.crear_prestamo TO 'empleado'@'%';
-GRANT EXECUTE ON PROCEDURE banco.pagar_cuota TO 'empleado'@'%';
-GRANT EXECUTE ON PROCEDURE banco.lista_morosos TO 'empleado'@'%';
-
-DROP USER IF EXISTS 'atm'@'%';
-CREATE USER 'atm'@'%' IDENTIFIED BY 'atm';
-GRANT SELECT ON banco.trans_cajas_ahorro TO 'atm'@'%';
-GRANT SELECT, UPDATE ON banco.Tarjeta TO 'atm'@'%';
-
-GRANT EXECUTE ON PROCEDURE banco.transferir TO 'atm'@'%';
-GRANT EXECUTE ON PROCEDURE banco.extraer TO 'atm'@'%';
-GRANT EXECUTE ON PROCEDURE banco.ultimos_movimientos TO 'atm'@'%';
-GRANT EXECUTE ON PROCEDURE banco.movimientos_por_periodo TO 'atm'@'%';
-
-FLUSH PRIVILEGES;
 
 
 -- Ejercicio 1-b)
@@ -360,7 +323,7 @@ BEGIN
 
     SELECT t.nro_cliente, t.nro_ca INTO v_nro_cliente, v_nro_ca FROM Tarjeta t WHERE t.nro_tarjeta = tarjeta;
 
-    IF NOT EXISTS (SELECT * FROM ATM a WHERE a.cod_caja = a.nro_atm) THEN
+    IF NOT EXISTS (SELECT * FROM ATM a WHERE a.cod_caja = nro_atm) THEN
         SET resultado = 'Error: odigo de ATM invalido';
         ROLLBACK; 
 
@@ -373,7 +336,7 @@ BEGIN
         ROLLBACK;
     
     ELSE
-        SELECT ca.saldo INTO v_saldo FROM Caja_Ahorro ca WHERE ca.nro_ca = v_nro_ca;
+        SELECT ca.saldo INTO v_saldo FROM Caja_Ahorro ca WHERE ca.nro_ca = v_nro_ca
 
     FOR UPDATE;
         IF monto > v_saldo THEN
@@ -396,7 +359,7 @@ BEGIN
 END //
 DELIMITER ;
 
---Ejercicio 1-a)
+--Ejercicio1-a)
 
 DROP PROCEDURE IF EXISTS transferir;
 
@@ -507,10 +470,10 @@ BEGIN
         IF(UPPER(v.tipo) = 'DEPOSITO', v.monto, (-1) * v.monto) AS monto,
         v.cod_caja,
         v.destino
-    FROM trans_caja_ahorro v
+    FROM trans_cajas_ahorro v
     JOIN Tarjeta t ON v.nro_ca = t.nro_ca
     WHERE t.nro_tarjeta = tarjeta AND v.fecha >= desde AND v.fecha <= hasta
-    ORDER BY v.fecha DESC, v.hora DESC
+    ORDER BY v.fecha DESC, v.hora DESC;
 END //
 DELIMITER ;
 
@@ -530,7 +493,7 @@ BEGIN
     
     START TRANSACTION;
     
-    IF NOT EXISTS (SELECT 1 FROM Cliente WHERE nro_cliente = nro_cliente) THEN
+    IF NOT EXISTS (SELECT 1 FROM Cliente c WHERE c.nro_cliente = nro_cliente) THEN
         SET resultado = 'El cliente no existe';
         ROLLBACK;
     ELSEIF EXISTS (SELECT 1 FROM Prestamo pr JOIN Pago pa ON pa.nro_prestamo = pr.nro_prestamo WHERE pr.nro_cliente = nro_cliente AND pa.fecha_pago IS NULL) THEN
@@ -561,33 +524,32 @@ END //
 DELIMITER ;
 
 -- Ejercicio 3d
+DROP PROCEDURE IF EXISTS pagar_cuota;
 DELIMITER //
 CREATE PROCEDURE pagar_cuota(IN nro_prestamo INT, IN nro_pago INT, OUT resultado VARCHAR(100))
 BEGIN
     DECLARE v_fecha_pago DATE;
-    DECLARE v_fecha_vencimiento DATE;
     
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN     
         ROLLBACK;
-        SET resultado = 'El prestamo fue cancelado';
+        SET resultado = 'La cuota fue cancelado';
     END;
     
     START TRANSACTION;
     
-    IF NOT EXISTS (SELECT * FROM Prestamo p WHERE nro_prestamo = p.nro_prestamo) THEN
+    IF NOT EXISTS (SELECT 1 FROM Prestamo p WHERE nro_prestamo = p.nro_prestamo) THEN
         SET resultado = 'Error: el prestamo no existe';
         ROLLBACK;
-    ELSEIF NOT EXISTS (SELECT * FROM Pago p WHERE nro_prestamo = p.nro_prestamo AND nro_pago = p.nro_pago) THEN
+    ELSEIF NOT EXISTS (SELECT 1 FROM Pago p WHERE nro_prestamo = p.nro_prestamo AND nro_pago = p.nro_pago) THEN
         SET resultado = 'Error: el pago no corresponde a nignun prestamo';
         ROLLBACK;
     ELSE
-        SELECT p.fecha_pago, p.fecha_vencimiento INTO v_fecha_pago, v_fecha_vencimiento FROM Pago p WHERE nro_prestamo = p.nro_prestamo AND nro_pago = p.nro_pago;
+        SELECT p.fecha_pago INTO v_fecha_pago FROM Pago p WHERE nro_prestamo = p.nro_prestamo AND nro_pago = p.nro_pago FOR UPDATE;
         IF (v_fecha_pago IS NOT NULL) THEN
             SET resultado = 'Error: el pago ya fue hecho';
             ROLLBACK;
         ELSE
-            FOR UPDATE;
             UPDATE Pago p SET p.fecha_pago = CURDATE() WHERE p.nro_pago = nro_pago AND p.nro_prestamo = nro_prestamo;
             COMMIT;
             SET resultado = 'El pago se realizo con exito';
@@ -597,8 +559,9 @@ END //
 DELIMITER ;
 
 -- Ejercicio 3e
+DROP PROCEDURE IF EXISTS listado_morosos;
 DELIMITER //
-CREATE PROCEDURE listado_morosos (INT cant_cuotas)
+CREATE PROCEDURE listado_morosos (IN cant_cuotas INT)
 BEGIN
     SELECT
         c.nro_cliente,
@@ -628,3 +591,42 @@ BEGIN
     HAVING COUNT(*) >= cant_cuotas;
 END //
 DELIMITER ;
+
+DROP USER IF EXISTS 'admin'@'localhost';
+CREATE USER 'admin'@'localhost' IDENTIFIED BY 'admin';
+GRANT ALL PRIVILEGES ON banco.* TO 'admin'@'localhost' WITH GRANT OPTION;
+GRANT CREATE USER ON *.* TO 'admin'@'localhost';
+
+DROP USER IF EXISTS ''@'localhost';
+DROP USER IF EXISTS 'empleado'@'%';
+CREATE USER 'empleado'@'%' IDENTIFIED BY 'empleado';
+GRANT SELECT ON banco.Empleado TO 'empleado'@'%';
+GRANT SELECT ON banco.Sucursal TO 'empleado'@'%';
+GRANT SELECT ON banco.Tasa_Plazo_Fijo TO 'empleado'@'%';
+GRANT SELECT ON banco.Tasa_Prestamo TO 'empleado'@'%';
+
+GRANT SELECT, INSERT ON banco.Prestamo TO 'empleado'@'%';
+GRANT SELECT, INSERT ON banco.Plazo_Fijo TO 'empleado'@'%';
+GRANT SELECT, INSERT ON banco.Plazo_Cliente TO 'empleado'@'%';
+GRANT SELECT, INSERT ON banco.Caja_Ahorro TO 'empleado'@'%';
+GRANT SELECT, INSERT ON banco.Tarjeta TO 'empleado'@'%';
+
+GRANT SELECT, INSERT, UPDATE ON banco.Cliente TO 'empleado'@'%';
+GRANT SELECT, INSERT, UPDATE ON banco.Cliente_CA TO 'empleado'@'%';
+GRANT SELECT, INSERT, UPDATE ON banco.Pago TO 'empleado'@'%';
+
+GRANT EXECUTE ON PROCEDURE banco.crear_prestamo TO 'empleado'@'%';
+GRANT EXECUTE ON PROCEDURE banco.pagar_cuota TO 'empleado'@'%';
+GRANT EXECUTE ON PROCEDURE banco.listado_morosos TO 'empleado'@'%';
+
+DROP USER IF EXISTS 'atm'@'%';
+CREATE USER 'atm'@'%' IDENTIFIED BY 'atm';
+GRANT SELECT ON banco.trans_cajas_ahorro TO 'atm'@'%';
+GRANT SELECT, UPDATE ON banco.Tarjeta TO 'atm'@'%';
+
+GRANT EXECUTE ON PROCEDURE banco.transferir TO 'atm'@'%';
+GRANT EXECUTE ON PROCEDURE banco.extraer TO 'atm'@'%';
+GRANT EXECUTE ON PROCEDURE banco.ultimos_movimientos TO 'atm'@'%';
+GRANT EXECUTE ON PROCEDURE banco.movimientos_por_periodo TO 'atm'@'%';
+
+FLUSH PRIVILEGES;
