@@ -209,6 +209,7 @@ CREATE TABLE Transferencia (
 ) Engine = InnoDB;
 
 -- Create the view
+
 CREATE VIEW trans_cajas_ahorro AS
     SELECT 
         d.nro_ca,
@@ -298,14 +299,16 @@ CREATE VIEW trans_cajas_ahorro AS
     JOIN Caja_Ahorro ca ON tr.origen = ca.nro_ca
     JOIN Cliente c ON tr.nro_cliente = c.nro_cliente;
     
-
-
-
--- Ejercicio 1-b)
+--
+-- Ejercicio 1b
+--
 
 DROP PROCEDURE IF EXISTS extraer;
 
 DELIMITER //
+
+--
+
 CREATE PROCEDURE extraer(IN nro_atm INT, IN tarjeta BIGINT, IN monto DECIMAL (16, 2), OUT resultado VARCHAR(100))
 BEGIN
     DECLARE v_nro_cliente INT;
@@ -319,7 +322,7 @@ BEGIN
         SET resultado = 'Error: la transaccion fue cancelada';
     END;
 
-    START TRANSACTION;
+  
 
     SELECT t.nro_cliente, t.nro_ca INTO v_nro_cliente, v_nro_ca FROM Tarjeta t WHERE t.nro_tarjeta = tarjeta;
 
@@ -336,8 +339,9 @@ BEGIN
         ROLLBACK;
     
     ELSE
+    START TRANSACTION;
         SELECT ca.saldo INTO v_saldo FROM Caja_Ahorro ca WHERE ca.nro_ca = v_nro_ca
-
+      
     FOR UPDATE;
         IF monto > v_saldo THEN
             SET resultado = 'Error" el monto excede el saldo de la cuenta';
@@ -359,11 +363,16 @@ BEGIN
 END //
 DELIMITER ;
 
--- Ejercicio1-a)
+--
+-- Ejercicio 1a
+--
 
 DROP PROCEDURE IF EXISTS transferir;
 
 DELIMITER //
+
+--
+
 CREATE PROCEDURE transferir(IN nro_atm INT, IN tarjeta_origen BIGINT, IN destino INT, IN monto DECIMAL(16,2), OUT resultado VARCHAR(100))
 BEGIN
     DECLARE v_nro_cliente INT;
@@ -378,7 +387,6 @@ BEGIN
         SET resultado = 'La transaccion fue cancelada';
     END;
 
-    START TRANSACTION;
 
     SELECT t.nro_ca, t.nro_cliente INTO v_nro_ca, v_nro_cliente FROM Tarjeta t WHERE tarjeta_origen = t.nro_tarjeta;
     
@@ -398,6 +406,7 @@ BEGIN
         SET resultado  = 'Error: la cuenta destino y la origen son la misma cuenta';
         ROLLBACK;
     ELSE
+    START TRANSACTION;
         SELECT ca.saldo INTO v_saldo FROM Caja_Ahorro ca WHERE v_nro_ca = ca.nro_ca
     FOR UPDATE;
         IF monto > v_saldo THEN
@@ -423,9 +432,15 @@ BEGIN
     END IF;
 END //
 DELIMITER ;
-    
+
+--
 -- Ejercicio 2
+--
+
 DELIMITER //
+
+-- Esto es un trigger
+
 CREATE TRIGGER inserta_nuevo_prestamo
 AFTER INSERT ON Prestamo
 FOR EACH ROW
@@ -440,8 +455,14 @@ BEGIN
 END //
 DELIMITER ;
 
+--
 -- Ejercicio 3a
+--
+
 DELIMITER //
+
+-- Esto es un procedure
+
 CREATE PROCEDURE ultimos_movimientos(IN tarjeta BIGINT)
 BEGIN
     SELECT
@@ -459,8 +480,14 @@ BEGIN
 END //
 DELIMITER ;
 
+--
 -- Ejercicio 3b
+--
+
 DELIMITER //
+
+--
+
 CREATE PROCEDURE movimientos_por_periodo(IN tarjeta BIGINT, IN desde DATE, IN hasta DATE)
 BEGIN
     SELECT
@@ -477,8 +504,14 @@ BEGIN
 END //
 DELIMITER ;
 
+--
 -- Ejercicio 3c
+--
+
 DELIMITER //
+
+--
+
 CREATE PROCEDURE crear_prestamo(IN nro_cliente INT, IN legajo INT, IN monto DECIMAL(10,2), IN cant_meses INT, OUT resultado VARCHAR(100))
 BEGIN
     DECLARE v_tasa DECIMAL(4,2);
@@ -523,9 +556,18 @@ BEGIN
 END //
 DELIMITER ;
 
+--
 -- Ejercicio 3d
+--
+
 DROP PROCEDURE IF EXISTS pagar_cuota;
+
+--
+
 DELIMITER //
+
+--
+
 CREATE PROCEDURE pagar_cuota(IN nro_prestamo INT, IN nro_pago INT, OUT resultado VARCHAR(100))
 BEGIN
     DECLARE v_fecha_pago DATE;
@@ -558,9 +600,16 @@ BEGIN
 END //
 DELIMITER ;
 
+--
 -- Ejercicio 3e
+--
+
 DROP PROCEDURE IF EXISTS listado_morosos;
+
 DELIMITER //
+
+--
+
 CREATE PROCEDURE listado_morosos (IN cant_cuotas INT)
 BEGIN
     SELECT
@@ -580,7 +629,7 @@ BEGIN
     WHERE pa.fecha_pago IS NULL AND pa.fecha_venc < CURDATE()
     GROUP BY
         c.nro_cliente,
-        cprestamo.tipo_doc,
+        c.tipo_doc,
         c.nro_doc,
         c.nombre,
         c.apellido,
@@ -592,6 +641,8 @@ BEGIN
 END //
 DELIMITER ;
 
+-- Permisos usuari
+
 DROP USER IF EXISTS 'admin'@'localhost';
 CREATE USER 'admin'@'localhost' IDENTIFIED BY 'admin';
 GRANT ALL PRIVILEGES ON banco.* TO 'admin'@'localhost' WITH GRANT OPTION;
@@ -601,7 +652,7 @@ DROP USER IF EXISTS ''@'localhost';
 DROP USER IF EXISTS 'empleado'@'%';
 CREATE USER 'empleado'@'%' IDENTIFIED BY 'empleado';
 GRANT SELECT ON banco.Empleado TO 'empleado'@'%';
-GRANT SELprestamoECT ON banco.Sucursal TO 'empleado'@'%';
+GRANT SELECT ON banco.Sucursal TO 'empleado'@'%';
 GRANT SELECT ON banco.Tasa_Plazo_Fijo TO 'empleado'@'%';
 GRANT SELECT ON banco.Tasa_Prestamo TO 'empleado'@'%';
 
