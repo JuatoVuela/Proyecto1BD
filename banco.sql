@@ -542,7 +542,7 @@ BEGIN
     ELSE
     
         SELECT tp.tasa INTO v_tasa FROM Tasa_Prestamo tp WHERE tp.periodo = cant_meses AND monto >= tp.monto_inf AND monto <= tp.monto_sup;
-        IF v_tasa IS NULL
+        IF v_tasa IS NULL THEN
             SET resultado = 'El monto tasa es nulo';
             ROLLBACK;
         END IF;
@@ -551,7 +551,7 @@ BEGIN
         SET v_valor_cuota = (monto + v_interes_total) / cant_meses;
         
         INSERT INTO Prestamo (fecha, cant_meses, monto, tasa_interes, interes, valor_cuota, legajo, nro_cliente)
-        VALUES (CURDATE(), cant_meses, monto, v_tasa, v_interes, v_valor_cuota, legajo, nro_cliente);
+        VALUES (CURDATE(), cant_meses, monto, v_tasa, v_interes_total, v_valor_cuota, legajo, nro_cliente);
         
         COMMIT;
         SET resultado='Se creo el prestamo exitosamente';
